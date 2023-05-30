@@ -70,11 +70,6 @@ def generateFrames(signal, ground_truth, num_gesture_points, gesture_name, emg_s
 
         frame_signalList = frame_signal.tolist()
 
-        #with open("Señal Fragmentada.json", "w") as file:
-        # Escribe el diccionario en formato JSON
-        #    json.dump(frame_signalList, file)
-
-        #print("Se guarda parte de la señal")
 
         spectrograms = Shared.generate_spectrograms(frame_signal, emg_sampling_rate)
         
@@ -92,19 +87,10 @@ def generateFrames(signal, ground_truth, num_gesture_points, gesture_name, emg_s
         #print(type(spectrograms))
 
         spectrogramsList = spectrograms.tolist()
-        #with open("Spectograma.json", "w") as file:
-        # Escribe el diccionario en formato JSON
-        #    json.dump(spectrogramsList, file)
-        #print("Se Guarda los datos")
 
         # Set data
         data = data.append({'Spectograms': spectrogramsList, 'Gesture': 'noGesture', 'Timestamp': timestamp ,'Quat_Spectrograms': quat_spectrograms}, ignore_index=True)
 
-        #print(data.shape[0])
-
-        #spectrogramsPart = data['Spectograms']
-
-        #spectrogramsPart.to_json('EspectogramaPartePandas.json')
 
         # Check the threshold to consider gesture
         if total_ones >= Shared.FRAME_WINDOW * Shared.TOLERANCE_WINDOW or \
@@ -132,15 +118,6 @@ def generateFrames(signal, ground_truth, num_gesture_points, gesture_name, emg_s
                 is_included[last + i] = True
 
     data_filtered = data.loc[is_included]
-
-    #spectrogramsPart = data_filtered['Spectograms']
-
-    #print(type(spectrogramsPart))
-
-    #spectrogramsPart.to_json('Espectograma filtrado')
-
-    
-    #print("Se Guarda los datos del espectograma")
     
     return data_filtered , ground_truth
 
@@ -161,12 +138,6 @@ def generateData(samples, emg_sampling_rate):
         num_gesture_points = sample["groundTruthIndex"][1] - sample["groundTruthIndex"][0]
         quats = sample["quaternion"]
 
-
-        #with open("SeñalEMGPura.json", "w") as f:
-        # Escribe el diccionario en formato JSON
-        #    json.dump(emg, f)
-
-        #print("Señal Pura guardada")
 
         # Get signal from sample
         signal = Shared.preprocess_signal(emg)
@@ -207,7 +178,8 @@ def saveSampleInDatastore(samples, user, data_type, data_store, device_type):
         # Set data to save
         if class_name != 'noGesture':
             newGroundTruth = pd.Series(sample[2])
-            dfData = pd.concat([sequence_data, newGroundTruth], axis=1)
+            #dfData = pd.concat([sequence_data, newGroundTruth], axis=1)
+            dfData = sequence_data  
         else:
             dfData = sequence_data       
 
