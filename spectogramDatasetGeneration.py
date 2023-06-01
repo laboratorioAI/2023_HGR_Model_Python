@@ -45,15 +45,15 @@ def generateFrames(signal, ground_truth, num_gesture_points, gesture_name, emg_s
 
     # Allocate space for the results
     num_windows = int(np.floor((signal.shape[1]-Shared.FRAME_WINDOW) / Shared.WINDOW_STEP_LSTM) + 1)
-    columnas = ['Spectograms', 'Gesture', 'Timestamp' ,'Quat_Spectrograms']
-    #data = [(None, 'noGesture', None, None) for _ in range(num_windows)]
+    columnas = ['Spectograms', 'Gesture', 'Timestamp' ]
+    
     data = pd.DataFrame(columns=columnas)
+    
     is_included = np.zeros((num_windows), dtype=bool)
 
-
+  
     # Creating frames
     for i in range(num_windows):
-
         # Get signal data to create a frame
         translation = (i)*Shared.WINDOW_STEP_LSTM
         start = 0 + translation
@@ -70,7 +70,6 @@ def generateFrames(signal, ground_truth, num_gesture_points, gesture_name, emg_s
 
         frame_signalList = frame_signal.tolist()
 
-
         spectrograms = Shared.generate_spectrograms(frame_signal, emg_sampling_rate)
         
        
@@ -82,23 +81,26 @@ def generateFrames(signal, ground_truth, num_gesture_points, gesture_name, emg_s
             frame_quat_signal = quat_expanded[:, start:end]
         
        
-        quat_spectrograms = Shared.generate_quat_spectrogram(frame_quat_signal, emg_sampling_rate)
-
-        #print(type(spectrograms))
+        quat_spectrograms = Shared.generate_quat_spectrogram(frame_quat_signal, emg_sampling_rate)     
 
         spectrogramsList = spectrograms.tolist()
+        spectrograms_flat = spectrograms.flatten()
 
-        # Set data
-        data = data.append({'Spectograms': spectrogramsList, 'Gesture': 'noGesture', 'Timestamp': timestamp ,'Quat_Spectrograms': quat_spectrograms}, ignore_index=True)
+        #print(len(spectrogramsList_flat))
 
+        data.loc[i] = [spectrograms, 'noGesture', timestamp]
+
+        #data = pd.concat([data, pd.DataFrame({'Spectograms': spectrograms_flat, 'Gesture': 'noGesture', 'Timestamp': timestamp})], ignore_index=True)
 
         # Check the threshold to consider gesture
         if total_ones >= Shared.FRAME_WINDOW * Shared.TOLERANCE_WINDOW or \
                 total_ones >= num_gesture_points * Shared.TOLERNCE_GESTURE_LSTM:
             is_included[i] = True
-            data.loc[:,'Gesture'][i] = gesture_name
+            data.at[i, 'Gesture'] = gesture_name
+        
+        
 
-
+    #print(data)
     # Include no gestures in the sequence
     if Shared.NOGESTURE_FILL == 'all':
 
@@ -204,7 +206,7 @@ def generateFramesNoGesture(signal, quatExpanded, emgSamplingRate, requestedWind
         quatExpanded = np.concatenate((quatExpanded, quatFilling), axis=1)
     
     # Allocate space for the results
-    columnas = ['Spectograms', 'Gesture', 'Timestamp' ,'Quat_Spectrograms']
+    columnas = ['Spectograms', 'Gesture', 'Timestamp' ]
     data = pd.DataFrame(columns=columnas)
     
     # For each window
@@ -227,10 +229,10 @@ def generateFramesNoGesture(signal, quatExpanded, emgSamplingRate, requestedWind
         quatSpectrograms = Shared.generate_quat_spectrogram(frameQuatSignal, emgSamplingRate)
         # Save data
 
-        data = data.append({'Spectograms': spectrograms, 'Gesture': 'noGesture', 'Timestamp': timestamp ,'Quat_Spectrograms': quatSpectrograms}, ignore_index=True)
+        data.loc[i] = [spectrograms, 'noGesture', timestamp]
 
         #NoGesture for all
-        data.loc[:,'Gesture'][i] = 'noGesture'
+        data.at[i, 'Gesture'] = 'noGesture'
 
     return data
 
@@ -277,8 +279,8 @@ def generateDataNoGesture(samples, num_frames, emg_sampling_rate):
 
 
 # DEFINE THE DIRECTORIES WHERE THE DATA WILL BE FOUND
-dataDir = 'DatasetJSON';
-trainingDir = 'JSONtraining';
+dataDir ="C:\\Users\\invitado\\OneDrive - Escuela Politécnica Nacional\\Escritorio\\Marco Salazar Tesis\\DatasetJSON"
+trainingDir = "JSONtraining"
 
 # GET THE USERS DIRECTORIES
 users, trainingPath = Shared.get_users(dataDir, trainingDir)
@@ -313,7 +315,7 @@ if Shared.includeTesting:
 else:
     usersSets = [(usersTrainVal, 'usersTrainVal')]
 
-
+"""
 for i in range(len(usersSets)):
 
     # Select a set of users
@@ -340,6 +342,7 @@ for i in range(len(usersSets)):
 # Clean up variables
 #del validationSamples, transformedSamplesValidation, users, usersTrainVal, usersSet, usersTest
 
+"""
 
 # Include NOGESTURE
 # Define the directories where the sequences will be added
