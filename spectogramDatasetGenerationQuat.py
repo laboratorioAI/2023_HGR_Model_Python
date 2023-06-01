@@ -230,8 +230,8 @@ def generateDataNoGesture(samples, num_frames, emg_sampling_rate):
 
 
 # DEFINE THE DIRECTORIES WHERE THE DATA WILL BE FOUND
-dataDir = 'DatasetJSON';
-trainingDir = 'JSONtraining';
+dataDir = "C:\\Users\\invitado\\OneDrive - Escuela Politécnica Nacional\\Escritorio\\Marco Salazar Tesis\\DatasetJSON"
+trainingDir = 'JSONtraining'
 
 # GET THE USERS DIRECTORIES
 users, trainingPath = Shared.get_users(dataDir, trainingDir)
