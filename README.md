@@ -5,7 +5,7 @@
 This document lists the steps needed to create the CNN-LSTM model and Evaluate the result in: . 
 
 ### Description
-Hand Gesture Recognition system development used CRISP-ML as a process model for the machine learning application lifecycle. The table shown below contains all the project files related to activities performed in the lifecycle of the HGR system. **Note:** It's crucial that each file be executed on its own branch since other files such as `Shared.m` or `SpectrogramDatastore.m`  are used in the files listed on the table.  
+Hand Gesture Recognition system development used CRISP-ML as a process model for the machine learning application lifecycle. The table shown below contains all the project files related to activities performed in the lifecycle of the HGR system.   
 
 | **Activity**                                                        | **Branch**      | **File**                                |
 |---------------------------------------------------------------------|-----------------|-----------------------------------------|
