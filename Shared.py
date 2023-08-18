@@ -42,7 +42,7 @@ class Shared:
     # For LSTM
     FILLING_TYPE_LSTM = 'before' # 'before' 'none'
     NOGESTURE_FILL = 'some' # 'some' 'all'
-    NOGESTURE_IN_SEQUENCE = 3 # if 'some'
+    NOGESTURE_IN_SEQUENCE = 6 # if 'some'
     WINDOW_STEP_LSTM = 15 # 15 30
     PAD_KIND = 'shortest' # 'shortest' 'longest'
     TOLERNCE_GESTURE_LSTM = 0.5 # 0.75 0.25;
@@ -74,10 +74,11 @@ class Shared:
         #print(user)
         # Extract samples
         emg_sampling_rate = user_data['generalInfo']['samplingFrequencyInHertz']
+        user_name = user_data['userInfo']['name']
         training_samples = user_data['trainingSamples']
         testing_samples = user_data['testingSamples']
         device_type = user_data['generalInfo']['deviceModel']
-        return training_samples, testing_samples, emg_sampling_rate, device_type
+        return training_samples, testing_samples, emg_sampling_rate, device_type, user_name
 
     @staticmethod
     def read_file(filename):
@@ -137,39 +138,27 @@ class Shared:
         return signal_filt
 
     @staticmethod
-    # FUNCTION TO GENERATE SPECTROGRAMS
     def generate_spectrograms(signalIn, sampleFrequency):
-        # Preallocate space for the spectrograms
         numCols = np.floor((signalIn.shape[1] - Shared.OVERLAPPING) / (Shared.WINDOW - Shared.OVERLAPPING))
-
         spectrograms = np.zeros((len(Shared.FRECUENCIES), int(numCols), Shared.numChannels))
-        
-        # Spectrograms generation
         for i in range(signalIn.shape[0]):
-            f, t, sxx = signal.spectrogram(signalIn[i, :], fs=sampleFrequency, window=get_window('hamming',Shared.WINDOW), noverlap=Shared.OVERLAPPING, mode='magnitude', scaling='spectrum', axis=0)
-            spectrograms[:, :, i] = sxx
-
+            f, t, sxx = signal.spectrogram(signalIn[i, :], fs=sampleFrequency, detrend=False, nfft=200, nperseg=24, window=get_window('hamming',24), noverlap=12, mode='complex', scaling='density', axis=0)
+            spectrogram = abs(sxx[:13])**2
+            spectrograms[:, :, i] = spectrogram#normalized_spectrogram
         return spectrograms
-       
 
     @staticmethod
     def generate_quat_spectrogram(quatSignal, samplingRate):
-        ventana = 6
-        overlap = 3
+        numCols = np.floor((quatSignal.shape[0] - Shared.OVERLAPPING) / (Shared.WINDOW - Shared.OVERLAPPING))
         frecuenciaMuestreo = samplingRate
-        matrices = {}
-        for i in range(quatSignal.shape[0]):
-            #rectifiedSignal = quatSignal[:,i]**2;
-            f, t, m = signal.spectrogram(quatSignal[i,:], window=get_window('hamming',ventana), noverlap=overlap, fs=frecuenciaMuestreo, mode='magnitude')
-            matrices[f'c{i+1}'] = m
-        quatSpectrogram = np.concatenate((matrices['c1'][:,:,np.newaxis], 
-                                        matrices['c2'][:,:,np.newaxis],
-                                        matrices['c3'][:,:,np.newaxis], 
-                                        matrices['c4'][:,:,np.newaxis]),
-                                        axis=2)
-       
-        return quatSpectrogram
-    
+        quatSpectrograms = np.zeros((len(Shared.FRECUENCIES), 24, 4))
+        #print(numCols)
+        for i in range(quatSignal.shape[1]):
+            f, t, m = signal.spectrogram(quatSignal[:, i], fs=frecuenciaMuestreo, detrend=False, nfft=200, nperseg=6, window=get_window('hamming', 6), noverlap=3, mode='complex', scaling='density', axis=0)
+            quatSpectrogram = abs(m[:13])**2
+            quatSpectrograms[:, :, i] = quatSpectrogram
+        return quatSpectrograms
+        
     @staticmethod
     def normalizeQuaternion(quatMatrix):
         normalizedQuat = np.zeros((quatMatrix.shape[0], quatMatrix.shape[1]))
@@ -243,6 +232,3 @@ class Shared:
             if sumInterval >= np.floor((gtArrayLen - indexes[-1]) * TRESHOLD):
                 quatGroudTruth[-1] = 1
         return quatGroudTruth
-
-
-    
