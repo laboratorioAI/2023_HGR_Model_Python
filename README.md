@@ -14,4 +14,4 @@ Hand Gesture Recognition system development used CRISP-ML as a process model for
 | Individual modeling and evaluation (static gesture model)           | StaticModel     | staticModel.py                          |
 | Individual modeling and evaluation (dynamic gesture model)          | DynamicModel    | dynamicModel.py                         |
 | Individual modeling and evaluation (switch classifier)              | SwitchModel     | switchModel.py                          |
-| Evaluation App (generation of JSON )                                | GesturePipeline | evaluationApp.py                        |
+| Evaluation App (generation of JSON )                                | EvaluationApp   | evaluationApp.py                        |
