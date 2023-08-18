@@ -6,6 +6,7 @@ import os
 import random
 import pandas as pd
 import warnings
+import sys
 
 warnings.filterwarnings("ignore", message="The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.")
 
@@ -46,12 +47,11 @@ def generateFrames(signal, ground_truth, num_gesture_points, gesture_name, emg_s
     # Allocate space for the results
     num_windows = int(np.floor((signal.shape[1]-Shared.FRAME_WINDOW) / Shared.WINDOW_STEP_LSTM) + 1)
     columnas = ['Spectograms', 'Gesture', 'Timestamp' ]
-    
+    #print(num_windows)
     data = pd.DataFrame(columns=columnas)
-    
+    #print(num_windows)
     is_included = np.zeros((num_windows), dtype=bool)
 
-  
     # Creating frames
     for i in range(num_windows):
         # Get signal data to create a frame
@@ -65,6 +65,7 @@ def generateFrames(signal, ground_truth, num_gesture_points, gesture_name, emg_s
 
         # Get Spectrogram of the window
         frame_signal = signal[:, start:end]
+        #print(frame_signal.shape)
 
         #print(type(frame_signal))
 
@@ -81,7 +82,7 @@ def generateFrames(signal, ground_truth, num_gesture_points, gesture_name, emg_s
             frame_quat_signal = quat_expanded[:, start:end]
         
        
-        quat_spectrograms = Shared.generate_quat_spectrogram(frame_quat_signal, emg_sampling_rate)     
+        #quat_spectrograms = Shared.generate_quat_spectrogram(frame_quat_signal, emg_sampling_rate)     
 
         spectrogramsList = spectrograms.tolist()
         spectrograms_flat = spectrograms.flatten()
@@ -134,6 +135,7 @@ def generateData(samples, emg_sampling_rate):
     for i in range(no_gesture_per_user, len(samples)):
         # Get sample data
         sample = samples["idx_"+str(i)]
+        #print(sample)
         emg = sample["emg"]
         gesture_name = sample["gestureName"]
         ground_truth = sample["groundTruth"]
@@ -172,6 +174,7 @@ def saveSampleInDatastore(samples, user, data_type, data_store, device_type):
             class_name = 'noGesture'
 
         # Get data in sequence
+        #print(type(sequence_data))
         timestamps = sequence_data['Timestamp'].values
 
         # Create a file name (user-type-sample-start-finish)
@@ -222,13 +225,7 @@ def generateFramesNoGesture(signal, quatExpanded, emgSamplingRate, requestedWind
         spectrograms = Shared.generate_spectrograms(frameSignal, emgSamplingRate)
         # Get quaternion spectrogram of the window, compare finish value
         # with the dimensions of the quat
-        if finish > quatExpanded.shape[1]:
-            frameQuatSignal = quatExpanded[:, inicio:]
-        else:
-            frameQuatSignal = quatExpanded[:, inicio:finish]
-        quatSpectrograms = Shared.generate_quat_spectrogram(frameQuatSignal, emgSamplingRate)
-        # Save data
-
+        
         data.loc[i] = [spectrograms, 'noGesture', timestamp]
 
         #NoGesture for all
@@ -279,8 +276,8 @@ def generateDataNoGesture(samples, num_frames, emg_sampling_rate):
 
 
 # DEFINE THE DIRECTORIES WHERE THE DATA WILL BE FOUND
-dataDir ="C:\\Users\\invitado\\OneDrive - Escuela Politécnica Nacional\\Escritorio\\Marco Salazar Tesis\\DatasetJSON"
-trainingDir = "JSONtraining"
+dataDir ="D:\Marco Salazar Tesis\DatasetJSON"
+trainingDir = "JSONtesting"
 
 # GET THE USERS DIRECTORIES
 users, trainingPath = Shared.get_users(dataDir, trainingDir)
@@ -299,8 +296,8 @@ else:
 categories = ['fist', 'open', 'pinch', 'waveIn', 'waveOut', 'up', 'down', 'left', 'right', 'forward', 'backward']
 
 # create training and validation datastores
-training_datastore = createDatastore('DatastoresLSTM/training', categories)
-validation_datastore = createDatastore('DatastoresLSTM/validation', categories)
+training_datastore = createDatastore('DatastoresLSTMTesting/training', categories)
+#validation_datastore = createDatastore('DatastoresLSTMTesting/validation', categories)
 
 # create testing datastore if includeTesting is True
 if Shared.includeTesting:
@@ -315,7 +312,7 @@ if Shared.includeTesting:
 else:
     usersSets = [(usersTrainVal, 'usersTrainVal')]
 
-"""
+contador = 0 
 for i in range(len(usersSets)):
 
     # Select a set of users
@@ -323,33 +320,40 @@ for i in range(len(usersSets)):
     usersSet = usersSets[i][1]
     
     if usersSet == 'usersTrainVal':
-        datastore1, datastore2 = training_datastore, validation_datastore
+        datastore1 = training_datastore#, validation_datastore, datastore2
     elif usersSet == 'usersTest':
         datastore1, datastore2 = testing_datastore, testing_datastore
     
     for user in users:
+        contador += 1 
+        
+
         # Get user samples
-        trainingSamples, validationSamples, emgSamplingRate, deviceType = Shared.get_training_testing_samples(trainingPath, user)
+        trainingSamples, validationSamples, emgSamplingRate, deviceType, userName = Shared.get_training_testing_samples(trainingPath, user)
         
         # Transform samples
         transformedSamplesTraining = generateData(trainingSamples, emgSamplingRate)
-        transformedSamplesValidation = generateData(validationSamples, emgSamplingRate)
+        #transformedSamplesValidation = generateData(validationSamples, emgSamplingRate)
 
         # Save samples
         saveSampleInDatastore(transformedSamplesTraining, user, 'train', datastore1, deviceType)
-        saveSampleInDatastore(transformedSamplesValidation, user, 'validation', datastore2, deviceType)
+        #saveSampleInDatastore(transformedSamplesValidation, user, 'validation', datastore2, deviceType)
+        print("Usuario ", contador, "de ", len(users) , " listos", end="\r")
+        sys.stdout.flush()
+
+ 
 
 # Clean up variables
 #del validationSamples, transformedSamplesValidation, users, usersTrainVal, usersSet, usersTest
 
-"""
+
 
 # Include NOGESTURE
 # Define the directories where the sequences will be added
 if Shared.includeTesting:
-    datastores = [training_datastore, validation_datastore, testing_datastore]
+    datastores = [training_datastore]#, validation_datastore, testing_datastore]
 else:
-    datastores = [training_datastore, validation_datastore]
+    datastores = [training_datastore]#, validation_datastore]
 
 noGestureFramesPerSample = [None] * len(datastores)
 
@@ -371,8 +375,9 @@ for i in range(len(datastores)):
         numFramesSamples = np.zeros(numFiles)
         for j in range(numFiles):
             with open(files[j]) as f:
-                data = json.load(f)
-                frames = data['sequenceData']
+                dataNew = json.load(f)
+                #print(dataNew)
+                frames = dataNew['Spectograms']
                 numFramesSamples[j] = len(frames)
         
         # Save the mean of frames for all samples
@@ -414,7 +419,7 @@ for i in range(len(datastores)):
 categories = ['noGesture']
 
 trainingDatastore = createDatastore(datastores[0], categories)
-validationDatastore = createDatastore(datastores[1], categories)
+#validationDatastore = createDatastore(datastores[1], categories)
 if Shared.includeTesting:
     testingDatastore = createDatastore(datastores[2], categories)
 #del categories, datastores
@@ -424,30 +429,34 @@ if Shared.includeTesting:
 
 # Get the number of noGesture per dataset
 noGestureTraining = noGestureFramesPerSample[0]
-noGestureValidation = noGestureFramesPerSample[1]
+#noGestureValidation = noGestureFramesPerSample[1]
 if Shared.includeTesting:
     noGestureTesting = noGestureFramesPerSample[2]
 
+contador = 0 
 for i in range(len(usersSets)):
+    contador += 1 
     # Select a set of users
     users = usersSets[i][0]
     usersSet = usersSets[i][1]
     
     if usersSet == 'usersTrainVal':
-        noGestureSize1, noGestureSize2, datastore1, datastore2 = noGestureTraining, noGestureValidation, trainingDatastore, validationDatastore
+        noGestureSize1,  datastore1 = noGestureTraining,  trainingDatastore #noGestureSize2, , datastore2  noGestureValidation, validationDatastore
     elif usersSet == 'usersTest':
         noGestureSize1, noGestureSize2, datastore1, datastore2 = noGestureTesting, noGestureTesting, testingDatastore, testingDatastore
   
 
     for user in users:
         # Get user samples
-        trainingSamples, validationSamples, emgSamplingRate, deviceType = Shared.get_training_testing_samples(trainingPath, user)
+        trainingSamples, validationSamples, emgSamplingRate, deviceType, userName = Shared.get_training_testing_samples(trainingPath, user)
         # Transform samples
         transformedSamplesTraining = generateDataNoGesture(trainingSamples, noGestureSize1, emgSamplingRate)
-        transformedSamplesValidation = generateDataNoGesture(validationSamples, noGestureSize2, emgSamplingRate)
+        #transformedSamplesValidation = generateDataNoGesture(validationSamples, 47, emgSamplingRate)
         # Save samples
-        saveSampleInDatastore(transformedSamplesTraining, user, 'validation', datastore1, deviceType)
-        saveSampleInDatastore(transformedSamplesValidation, user, 'train', datastore2, deviceType)
+        saveSampleInDatastore(transformedSamplesTraining, user, 'train', datastore1, deviceType)
+        #saveSampleInDatastore(transformedSamplesValidation, user, 'validation', datastore2, deviceType)
+        print("Usuario ", contador, "de ", len(users), " listos", end="\r")
+        sys.stdout.flush()
 
 # Clear variables
 #noGestureSize1 = noGestureSize2 = datastore1 = datastore2 = noGestureTesting = noGestureTraining = noGestureValidation = None
